@@ -13,5 +13,9 @@
 	  <PackageReference Include="Serilog.AspNetCore" Version="8.0.3" />
 	  <PackageReference Include="FreePLM.Common" Version="10.0.2" />
   </ItemGroup>
+
+  <ItemGroup>
+	  <ProjectReference Include="..\FreePLM.Database\FreePLM.Database.csproj" />
+  </ItemGroup>
 	
 </Project>

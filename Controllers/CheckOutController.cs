@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
+using FreePLM.Office.Integration.Models;
+using FreePLM.Database.Services;
 
 namespace FreePLM.Office.Integration.Controllers;
 
@@ -10,10 +12,12 @@ namespace FreePLM.Office.Integration.Controllers;
 public class CheckOutController : ControllerBase
 {
     private readonly ILogger<CheckOutController> _logger;
+    private readonly ICheckOutService _checkOutService;
 
-    public CheckOutController(ILogger<CheckOutController> logger)
+    public CheckOutController(ILogger<CheckOutController> logger, ICheckOutService checkOutService)
     {
         _logger = logger;
+        _checkOutService = checkOutService;
     }
 
     /// <summary>
@@ -22,17 +26,30 @@ public class CheckOutController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> CheckOut([FromBody] CheckOutRequest request)
     {
-        _logger.LogInformation("CheckOut request for {ObjectId} by user", request.ObjectId);
+        _logger.LogInformation("CheckOut request for {ObjectId}", request.ObjectId);
 
-        // TODO: Implement with ICheckOutService
+        // TODO: Get actual user ID from authentication
+        var userId = "user@example.com";
+
+        var result = await _checkOutService.CheckOutAsync(
+            request.ObjectId,
+            userId,
+            request.MachineName,
+            request.Comment);
+
+        if (!result.Success)
+        {
+            return BadRequest(new { message = result.Message });
+        }
+
         return Ok(new
         {
-            success = true,
-            objectId = request.ObjectId,
-            revision = "A.01",
-            downloadUrl = $"http://localhost:5000/api/documents/{request.ObjectId}/content",
-            checkedOutDate = DateTime.UtcNow,
-            message = "Document checked out successfully (mock)"
+            success = result.Success,
+            objectId = result.ObjectId,
+            revision = result.Revision,
+            downloadUrl = $"http://localhost:5000/api/documents/{result.ObjectId}/content",
+            checkedOutDate = result.CheckedOutDate,
+            message = result.Message
         });
     }
 
@@ -40,23 +57,41 @@ public class CheckOutController : ControllerBase
     /// Check in a document
     /// </summary>
     [HttpPost("checkin")]
-    public async Task<IActionResult> CheckIn([FromForm] string objectId, [FromForm] IFormFile file,
-        [FromForm] string comment, [FromForm] bool createMajorRevision = false,
-        [FromForm] string? newStatus = null)
+    public async Task<IActionResult> CheckIn([FromForm] CheckInRequest request)
     {
-        _logger.LogInformation("CheckIn request for {ObjectId}, major={Major}", objectId, createMajorRevision);
+        _logger.LogInformation("CheckIn request for {ObjectId}, major={Major}", request.ObjectId, request.CreateMajorRevision);
 
-        // TODO: Implement with ICheckOutService
-        var newRevision = createMajorRevision ? "B.01" : "A.02";
+        // TODO: Get actual user ID from authentication
+        var userId = "user@example.com";
+
+        if (request.File == null)
+        {
+            return BadRequest(new { message = "File is required" });
+        }
+
+        using var fileStream = request.File.OpenReadStream();
+
+        var result = await _checkOutService.CheckInAsync(
+            request.ObjectId,
+            fileStream,
+            userId,
+            request.Comment,
+            request.CreateMajorRevision,
+            request.NewStatus);
+
+        if (!result.Success)
+        {
+            return BadRequest(new { message = result.Message });
+        }
 
         return Ok(new
         {
-            success = true,
-            objectId = objectId,
-            newRevision = newRevision,
-            previousRevision = "A.01",
-            checkedInDate = DateTime.UtcNow,
-            message = "Document checked in successfully (mock)"
+            success = result.Success,
+            objectId = result.ObjectId,
+            newRevision = result.NewRevision,
+            previousRevision = result.PreviousRevision,
+            checkedInDate = result.CheckedInDate,
+            message = result.Message
         });
     }
 
@@ -68,11 +103,20 @@ public class CheckOutController : ControllerBase
     {
         _logger.LogInformation("Cancel CheckOut for {ObjectId}", request.ObjectId);
 
-        // TODO: Implement with ICheckOutService
+        // TODO: Get actual user ID from authentication
+        var userId = "user@example.com";
+
+        var success = await _checkOutService.CancelCheckOutAsync(request.ObjectId, userId);
+
+        if (!success)
+        {
+            return BadRequest(new { message = "Failed to cancel checkout. Document may not be checked out by you." });
+        }
+
         return Ok(new
         {
             success = true,
-            message = "Checkout cancelled successfully (mock)"
+            message = "Checkout cancelled successfully"
         });
     }
 
@@ -84,13 +128,14 @@ public class CheckOutController : ControllerBase
     {
         _logger.LogInformation("Get checkout status for {ObjectId}", objectId);
 
-        // TODO: Implement with ICheckOutService
+        var lockStatus = await _checkOutService.GetCheckOutStatusAsync(objectId);
+
         return Ok(new
         {
-            isLocked = false,
-            lockedBy = (string?)null,
-            lockedDate = (DateTime?)null,
-            workingRevision = (string?)null
+            isLocked = lockStatus != null,
+            lockedBy = lockStatus?.LockedBy,
+            lockedDate = lockStatus?.LockedDate,
+            workingRevision = lockStatus?.WorkingRevision
         });
     }
 }

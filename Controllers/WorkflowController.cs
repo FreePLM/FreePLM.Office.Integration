@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using FreePLM.Database.Services;
 
 namespace FreePLM.Office.Integration.Controllers;
 
@@ -10,10 +11,17 @@ namespace FreePLM.Office.Integration.Controllers;
 public class WorkflowController : ControllerBase
 {
     private readonly ILogger<WorkflowController> _logger;
+    private readonly IWorkflowService _workflowService;
+    private readonly IDocumentService _documentService;
 
-    public WorkflowController(ILogger<WorkflowController> logger)
+    public WorkflowController(
+        ILogger<WorkflowController> logger,
+        IWorkflowService workflowService,
+        IDocumentService documentService)
     {
         _logger = logger;
+        _workflowService = workflowService;
+        _documentService = documentService;
     }
 
     /// <summary>
@@ -25,14 +33,36 @@ public class WorkflowController : ControllerBase
         _logger.LogInformation("Change status for {ObjectId} to {NewStatus}",
             request.ObjectId, request.NewStatus);
 
-        // TODO: Implement with IWorkflowService
+        // TODO: Get actual user ID from authentication
+        var userId = "user@example.com";
+
+        // Get current document to know old status
+        var document = await _documentService.GetDocumentAsync(request.ObjectId);
+        if (document == null)
+        {
+            return NotFound(new { message = "Document not found" });
+        }
+
+        var oldStatus = document.Status;
+
+        var success = await _workflowService.ChangeStatusAsync(
+            request.ObjectId,
+            request.NewStatus,
+            userId,
+            request.Comment);
+
+        if (!success)
+        {
+            return BadRequest(new { message = "Invalid status transition" });
+        }
+
         return Ok(new
         {
             success = true,
             objectId = request.ObjectId,
-            oldStatus = "InWork",
+            oldStatus = oldStatus,
             newStatus = request.NewStatus,
-            message = "Status changed successfully (mock)"
+            message = "Status changed successfully"
         });
     }
 
@@ -44,20 +74,9 @@ public class WorkflowController : ControllerBase
     {
         _logger.LogInformation("Get status history for {ObjectId}", objectId);
 
-        // TODO: Implement with IWorkflowService
-        return Ok(new[]
-        {
-            new
-            {
-                historyId = 1,
-                objectId = objectId,
-                oldStatus = "Private",
-                newStatus = "InWork",
-                changedBy = "user@example.com",
-                changedDate = DateTime.UtcNow.AddDays(-5),
-                comment = "Starting work"
-            }
-        });
+        var history = await _workflowService.GetWorkflowHistoryAsync(objectId);
+
+        return Ok(history);
     }
 }
 

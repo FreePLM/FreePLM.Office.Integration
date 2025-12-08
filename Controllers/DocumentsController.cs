@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
+using FreePLM.Office.Integration.Models;
+using FreePLM.Database.Services;
 
 namespace FreePLM.Office.Integration.Controllers;
 
@@ -10,10 +12,12 @@ namespace FreePLM.Office.Integration.Controllers;
 public class DocumentsController : ControllerBase
 {
     private readonly ILogger<DocumentsController> _logger;
+    private readonly IDocumentService _documentService;
 
-    public DocumentsController(ILogger<DocumentsController> logger)
+    public DocumentsController(ILogger<DocumentsController> logger, IDocumentService documentService)
     {
         _logger = logger;
+        _documentService = documentService;
     }
 
     /// <summary>
@@ -24,26 +28,14 @@ public class DocumentsController : ControllerBase
     {
         _logger.LogInformation("Getting document {ObjectId}", objectId);
 
-        // TODO: Implement with IDocumentService
-        return Ok(new
+        var document = await _documentService.GetDocumentAsync(objectId);
+
+        if (document == null)
         {
-            objectId = objectId,
-            fileName = "Sample.docx",
-            currentRevision = "A.01",
-            status = "InWork",
-            owner = "user@example.com",
-            group = "Engineering",
-            role = "Engineer",
-            project = "PLM-Project",
-            createdDate = DateTime.UtcNow.AddDays(-30),
-            createdBy = "user@example.com",
-            modifiedDate = DateTime.UtcNow,
-            modifiedBy = "user@example.com",
-            fileSize = 1024000,
-            isCheckedOut = false,
-            checkedOutBy = (string?)null,
-            checkedOutDate = (DateTime?)null
-        });
+            return NotFound(new { message = "Document not found" });
+        }
+
+        return Ok(document);
     }
 
     /// <summary>
@@ -54,27 +46,49 @@ public class DocumentsController : ControllerBase
     {
         _logger.LogInformation("Downloading document {ObjectId}, revision {Revision}", objectId, revision ?? "current");
 
-        // TODO: Implement with IDocumentService
-        return NotFound(new { message = "Document not found - backend implementation pending" });
+        var fileStream = await _documentService.DownloadDocumentAsync(objectId, revision);
+
+        if (fileStream == null)
+        {
+            return NotFound(new { message = "Document not found" });
+        }
+
+        var document = await _documentService.GetDocumentAsync(objectId);
+        var fileName = document?.FileName ?? "document";
+
+        return File(fileStream, "application/octet-stream", fileName);
     }
 
     /// <summary>
     /// Create a new document
     /// </summary>
     [HttpPost]
-    public async Task<IActionResult> CreateDocument([FromForm] IFormFile file, [FromForm] string fileName,
-        [FromForm] string owner, [FromForm] string group, [FromForm] string role, [FromForm] string project,
-        [FromForm] string? comment = null)
+    public async Task<IActionResult> CreateDocument([FromForm] CreateDocumentRequest request)
     {
-        _logger.LogInformation("Creating new document {FileName}", fileName);
+        _logger.LogInformation("Creating new document {FileName}", request.FileName);
 
-        // TODO: Implement with IDocumentService
+        if (request.File == null)
+        {
+            return BadRequest(new { message = "File is required" });
+        }
+
+        using var fileStream = request.File.OpenReadStream();
+
+        var objectId = await _documentService.CreateDocumentAsync(
+            fileStream,
+            request.FileName,
+            request.Owner,
+            request.Group,
+            request.Role,
+            request.Project,
+            request.Comment);
+
         return Ok(new
         {
             success = true,
-            objectId = $"DOC-{DateTime.UtcNow:yyyyMMdd}-{Random.Shared.Next(10000, 99999)}",
+            objectId = objectId,
             revision = "A.01",
-            message = "Document created successfully (mock)"
+            message = "Document created successfully"
         });
     }
 
@@ -88,23 +102,16 @@ public class DocumentsController : ControllerBase
     {
         _logger.LogInformation("Searching documents");
 
-        // TODO: Implement with IDocumentService
+        var documents = await _documentService.SearchDocumentsAsync(objectId, fileName, project, owner, status);
+        var documentList = documents.ToList();
+
         return Ok(new
         {
-            documents = new[] {
-                new {
-                    objectId = "DOC-2024-12345",
-                    fileName = "Sample1.docx",
-                    currentRevision = "A.01",
-                    status = "InWork",
-                    owner = "user@example.com",
-                    project = "PLM-Project"
-                }
-            },
-            totalCount = 1,
+            documents = documentList,
+            totalCount = documentList.Count,
             pageNumber = 1,
             pageSize = 50,
-            totalPages = 1
+            totalPages = (documentList.Count + 49) / 50
         });
     }
 }

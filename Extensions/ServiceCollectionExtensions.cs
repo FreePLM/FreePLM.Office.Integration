@@ -1,5 +1,10 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
+using FreePLM.Database;
+using FreePLM.Database.Repositories;
+using FreePLM.Database.Repositories.Sqlite;
+using FreePLM.Database.Services;
+using FreePLM.Database.Storage;
 
 namespace FreePLM.Office.Integration.Extensions;
 
@@ -18,29 +23,29 @@ public static class ServiceCollectionExtensions
         // Register configuration
         services.AddSingleton(configuration);
 
-        // TODO: Register FreePLM.Common interfaces and implementations
-        // services.AddScoped<IDocumentService, DocumentService>();
-        // services.AddScoped<ICheckOutService, CheckOutService>();
-        // services.AddScoped<IWorkflowService, WorkflowService>();
-        // services.AddScoped<IVersionService, VersionService>();
-        // services.AddScoped<IOwnershipService, OwnershipService>();
+        // Get configuration values
+        var connectionString = configuration.GetValue<string>("FreePLM:Database:SQLite:ConnectionString")
+            ?? throw new InvalidOperationException("Database connection string not configured");
+        var storagePath = configuration.GetValue<string>("FreePLM:Storage:LocalDirectory:RootPath")
+            ?? throw new InvalidOperationException("Storage path not configured");
 
-        // TODO: Register repositories
-        // services.AddScoped<IPLMRepository, SQLiteRepository>();
+        // Initialize database
+        var dbInitializer = new DatabaseInitializer(connectionString);
+        dbInitializer.InitializeAsync().Wait();
 
-        // TODO: Register storage providers
-        // services.AddScoped<IStorageProvider, LocalDirectoryStorageProvider>();
-        // services.AddScoped<IMetadataStorage, JsonMetadataStorage>();
+        // Register repositories
+        services.AddScoped<IDocumentRepository>(sp => new SqliteDocumentRepository(connectionString));
+        services.AddScoped<IRevisionRepository>(sp => new SqliteRevisionRepository(connectionString));
+        services.AddScoped<ICheckOutRepository>(sp => new SqliteCheckOutRepository(connectionString));
+        services.AddScoped<IWorkflowRepository>(sp => new SqliteWorkflowRepository(connectionString));
 
-        // TODO: Register transaction coordinator
-        // services.AddScoped<ITransactionCoordinator, TransactionCoordinator>();
+        // Register storage service
+        services.AddScoped<IFileStorageService>(sp => new LocalDirectoryStorageService(storagePath));
 
-        // TODO: Register validation service
-        // services.AddScoped<IValidationService, ValidationService>();
-
-        // TODO: Register utility services
-        // services.AddSingleton<IObjectIdGenerator, ObjectIdGenerator>();
-        // services.AddSingleton<IHashService, SHA256HashService>();
+        // Register PLM services
+        services.AddScoped<IDocumentService, DocumentService>();
+        services.AddScoped<ICheckOutService, CheckOutService>();
+        services.AddScoped<IWorkflowService, WorkflowService>();
 
         return services;
     }
