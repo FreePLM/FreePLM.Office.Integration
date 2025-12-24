@@ -1,0 +1,12 @@
+<Window x:Class="FreePLM.Office.Integration.Windows.CreateDocumentDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:usercontrols="clr-namespace:FreePLM.WPF.UserControls.UserControls;assembly=FreePLM.WPF.UserControls"
+        Title="Create New Document" Height="550" Width="500"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize"
+        Topmost="True">
+    <Grid>
+        <usercontrols:CreateDocumentUserControl x:Name="CreateDocumentControl"/>
+    </Grid>
+</Window>

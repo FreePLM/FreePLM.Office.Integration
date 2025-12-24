@@ -1,0 +1,220 @@
+<Window x:Class="FreePLM.Office.Integration.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:FreePLM.Office.Integration"
+        xmlns:controls="clr-namespace:FreePLM.WPF.UserControls.UserControls;assembly=FreePLM.WPF.UserControls"
+        mc:Ignorable="d"
+        Title="FreePLM - Document Management" Height="700" Width="1000"
+        WindowStartupLocation="CenterScreen"
+        Closing="Window_Closing">
+
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisConverter"/>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Border Grid.Row="0" Background="#0078D4" Padding="15">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="FreePLM Document Management"
+                               FontSize="18"
+                               FontWeight="Bold"
+                               Foreground="White"/>
+                    <TextBlock x:Name="ServiceStatusText"
+                               Text="Service running on http://localhost:5000"
+                               FontSize="11"
+                               Foreground="#E0E0E0"
+                               Margin="0,3,0,0"/>
+                </StackPanel>
+
+                <Button Grid.Column="1"
+                        Content="Open Swagger"
+                        Padding="12,6"
+                        Background="White"
+                        Foreground="#0078D4"
+                        BorderThickness="0"
+                        Cursor="Hand"
+                        Click="OpenSwagger_Click"/>
+            </Grid>
+        </Border>
+
+        <!-- Main Content -->
+        <TabControl Grid.Row="1" Margin="0">
+            <!-- Check-In Tab -->
+            <TabItem Header="Check-In Document">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="450"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Document Info Panel -->
+                    <Border Grid.Column="0"
+                            BorderBrush="#E0E0E0"
+                            BorderThickness="0,0,1,0"
+                            Padding="15">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel>
+                                <TextBlock Text="Document Information"
+                                           FontSize="14"
+                                           FontWeight="Bold"
+                                           Margin="0,0,0,10"/>
+                                <controls:DocumentInfoUserControl x:Name="DocumentInfoControl"/>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Border>
+
+                    <!-- Splitter -->
+                    <GridSplitter Grid.Column="1"
+                                  Width="5"
+                                  HorizontalAlignment="Center"
+                                  VerticalAlignment="Stretch"
+                                  Background="#E0E0E0"/>
+
+                    <!-- Check-In Panel -->
+                    <Border Grid.Column="2" Padding="15">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel>
+                                <controls:CheckInUserControl x:Name="CheckInControl"/>
+
+                                <!-- Test Controls -->
+                                <Border BorderBrush="#E0E0E0"
+                                        BorderThickness="0,1,0,0"
+                                        Margin="0,20,0,0"
+                                        Padding="0,20,0,0">
+                                    <StackPanel>
+                                        <TextBlock Text="Test &amp; Validation"
+                                                   FontSize="12"
+                                                   FontWeight="Bold"
+                                                   Margin="0,0,0,10"/>
+
+                                        <Button Content="Create Test Document"
+                                                Click="CreateTestDocument_Click"
+                                                Padding="8,5"
+                                                Margin="0,0,0,8"/>
+
+                                        <Button Content="Simulate Check-Out"
+                                                Click="SimulateCheckOut_Click"
+                                                Padding="8,5"
+                                                Margin="0,0,0,8"/>
+
+                                        <Button Content="Open Vault Folder"
+                                                Click="OpenVaultFolder_Click"
+                                                Padding="8,5"
+                                                Margin="0,0,0,15"/>
+
+                                        <TextBlock Text="Status:"
+                                                   FontWeight="SemiBold"
+                                                   Margin="0,0,0,5"
+                                                   FontSize="11"/>
+                                        <TextBox x:Name="StatusTextBox"
+                                                 TextWrapping="Wrap"
+                                                 IsReadOnly="True"
+                                                 MinHeight="100"
+                                                 MaxHeight="150"
+                                                 VerticalScrollBarVisibility="Auto"
+                                                 Background="#F9F9F9"
+                                                 BorderBrush="#CCCCCC"
+                                                 FontSize="10"
+                                                 FontFamily="Consolas"/>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Border>
+                </Grid>
+            </TabItem>
+
+            <!-- Settings Tab -->
+            <TabItem Header="Settings">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="20">
+                        <TextBlock Text="Service Settings"
+                                   FontSize="16"
+                                   FontWeight="Bold"
+                                   Margin="0,0,0,15"/>
+
+                        <GroupBox Header="Storage Configuration" Margin="0,0,0,15">
+                            <StackPanel Margin="10">
+                                <TextBlock Text="Vault Root Path:" Margin="0,0,0,5"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox x:Name="VaultPathTextBox"
+                                             Grid.Column="0"
+                                             Margin="0,0,5,0"
+                                             VerticalContentAlignment="Center"/>
+                                    <Button Grid.Column="1"
+                                            Content="Browse..."
+                                            Padding="10,5"
+                                            Click="BrowseVaultPath_Click"/>
+                                </Grid>
+                            </StackPanel>
+                        </GroupBox>
+
+                        <GroupBox Header="Database Configuration" Margin="0,0,0,15">
+                            <StackPanel Margin="10">
+                                <TextBlock Text="Database Path:" Margin="0,0,0,5"/>
+                                <TextBox x:Name="DatabasePathTextBox"
+                                         IsReadOnly="True"
+                                         Background="#F0F0F0"/>
+                            </StackPanel>
+                        </GroupBox>
+
+                        <Button Content="Save Settings"
+                                HorizontalAlignment="Left"
+                                Padding="20,8"
+                                Click="SaveSettings_Click"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
+
+        <!-- Status Bar -->
+        <Border Grid.Row="2" Background="#F0F0F0" BorderBrush="#E0E0E0" BorderThickness="0,1,0,0">
+            <Grid Height="25" Margin="10,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0"
+                           Text="●"
+                           Foreground="#4CAF50"
+                           FontSize="16"
+                           VerticalAlignment="Center"
+                           Margin="0,0,5,0"/>
+
+                <TextBlock Grid.Column="1"
+                           Text="Service Active"
+                           VerticalAlignment="Center"
+                           FontSize="11"/>
+
+                <TextBlock Grid.Column="2"
+                           x:Name="VersionText"
+                           Text="Version 1.0.0"
+                           VerticalAlignment="Center"
+                           FontSize="11"
+                           Foreground="#666666"/>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

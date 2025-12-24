@@ -1,0 +1,12 @@
+<Window x:Class="FreePLM.Office.Integration.Windows.SearchDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:usercontrols="clr-namespace:FreePLM.WPF.UserControls.UserControls;assembly=FreePLM.WPF.UserControls"
+        Title="Search Documents" Height="650" Width="900"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="CanResize"
+        Topmost="True">
+    <Grid>
+        <usercontrols:SearchDocumentUserControl x:Name="SearchDocumentControl"/>
+    </Grid>
+</Window>

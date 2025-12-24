@@ -1,5 +1,7 @@
+using System.IO;
 using Microsoft.AspNetCore.Mvc;
 using FreePLM.Office.Integration.Models;
+using FreePLM.Office.Integration.Services;
 using FreePLM.Database.Services;
 
 namespace FreePLM.Office.Integration.Controllers;
@@ -13,11 +15,16 @@ public class CheckOutController : ControllerBase
 {
     private readonly ILogger<CheckOutController> _logger;
     private readonly ICheckOutService _checkOutService;
+    private readonly IDialogService _dialogService;
 
-    public CheckOutController(ILogger<CheckOutController> logger, ICheckOutService checkOutService)
+    public CheckOutController(
+        ILogger<CheckOutController> logger,
+        ICheckOutService checkOutService,
+        IDialogService dialogService)
     {
         _logger = logger;
         _checkOutService = checkOutService;
+        _dialogService = dialogService;
     }
 
     /// <summary>
@@ -138,7 +145,64 @@ public class CheckOutController : ControllerBase
             workingRevision = lockStatus?.WorkingRevision
         });
     }
+
+    /// <summary>
+    /// Show check-in UI dialog and process the check-in
+    /// </summary>
+    [HttpPost("checkin-ui")]
+    public async Task<IActionResult> CheckInWithUI([FromBody] CheckInUIRequest request)
+    {
+        _logger.LogInformation("Showing CheckIn UI for {ObjectId}", request.ObjectId);
+
+        try
+        {
+            // Show the WPF dialog
+            var dialogResult = await _dialogService.ShowCheckInDialogAsync(
+                request.ObjectId,
+                request.FileName,
+                request.CurrentRevision);
+
+            if (dialogResult == null || !dialogResult.Success)
+            {
+                return Ok(new { success = false, message = "Check-in cancelled by user" });
+            }
+
+            // Process the check-in
+            var userId = "user@example.com"; // TODO: Get from authentication
+
+            using var fileStream = new MemoryStream(dialogResult.FileContent!);
+
+            var result = await _checkOutService.CheckInAsync(
+                dialogResult.ObjectId,
+                fileStream,
+                userId,
+                dialogResult.Comment,
+                dialogResult.CreateMajorRevision,
+                null);
+
+            if (!result.Success)
+            {
+                return BadRequest(new { message = result.Message });
+            }
+
+            return Ok(new
+            {
+                success = result.Success,
+                objectId = result.ObjectId,
+                newRevision = result.NewRevision,
+                previousRevision = result.PreviousRevision,
+                checkedInDate = result.CheckedInDate,
+                message = result.Message
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during check-in with UI");
+            return StatusCode(500, new { message = $"Internal server error: {ex.Message}" });
+        }
+    }
 }
 
 public record CheckOutRequest(string ObjectId, string? Comment, string? MachineName);
 public record CancelCheckOutRequest(string ObjectId);
+public record CheckInUIRequest(string ObjectId, string FileName, string CurrentRevision);

@@ -5,6 +5,7 @@ using FreePLM.Database.Repositories;
 using FreePLM.Database.Repositories.Sqlite;
 using FreePLM.Database.Services;
 using FreePLM.Database.Storage;
+using FreePLM.Office.Integration.Services;
 
 namespace FreePLM.Office.Integration.Extensions;
 
@@ -46,6 +47,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IDocumentService, DocumentService>();
         services.AddScoped<ICheckOutService, CheckOutService>();
         services.AddScoped<IWorkflowService, WorkflowService>();
+
+        // Register UI services
+        services.AddSingleton<IDialogService, WpfDialogService>();
 
         return services;
     }

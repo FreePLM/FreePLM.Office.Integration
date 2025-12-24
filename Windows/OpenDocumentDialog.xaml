@@ -1,0 +1,12 @@
+<Window x:Class="FreePLM.Office.Integration.Windows.OpenDocumentDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:usercontrols="clr-namespace:FreePLM.WPF.UserControls.UserControls;assembly=FreePLM.WPF.UserControls"
+        Title="Open PLM Document" Height="250" Width="500"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize"
+        Topmost="True">
+    <Grid>
+        <usercontrols:OpenDocumentUserControl x:Name="OpenDocumentControl"/>
+    </Grid>
+</Window>
